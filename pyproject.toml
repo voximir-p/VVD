@@ -1,6 +1,17 @@
+[project]
+name = "vvd"
+version = "1.0.0"
+description = "A simple command-line tool written in Python that allows you to download videos from multiple websites"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "yt-dlp[default]"
+]
+
+[tool.ruff]
 # match black
 line-length = 120
-target-version = "py313"
+target-version = "py314"
 lint.select = ["ALL"]
 lint.ignore = [
     #### modules

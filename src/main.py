@@ -2,14 +2,12 @@ import shutil
 import subprocess as sp
 import sys
 import traceback
-from collections.abc import Callable
-from msvcrt import getch
 from pathlib import Path
 
 import yt_dlp
 
 
-def catch_exceptions(func: Callable) -> Callable:
+def catch_exceptions(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -26,13 +24,14 @@ class Downloader:
         self.video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         self.output_folder = Path.home() / "Downloads"
 
-    def wait_key(self, prompt: str, key: bytes):
-        print(prompt, end="", flush=True)
-        while getch() != key:
-            pass
+    def wait_key(self, prompt: str) -> None:
+        input(prompt)
 
     def open_in_explorer(self, path: Path):
-        sp.Popen(f'explorer /select,"{path}"')
+        if sys.platform == "win32":
+            sp.Popen(["explorer", f"/select,{path}"])
+        else:
+            sp.Popen(["open", str(path.parent)])
 
     def move_and_open(self, file_name: Path) -> None:
         finale_path = (self.output_folder / file_name.name).resolve()
@@ -49,14 +48,18 @@ class Downloader:
             "external_downloader": "aria2c",
             "external_downloader_args": {
                 "aria2c": [
-                    "-x", "16",      # connections per server
-                    "-s", "16",      # split into 16 pieces
-                    "-k", "1M",      # chunk size
-                    "--min-split-size", "1M",
-                    "--download-result=full"
+                    "-x",
+                    "16",  # connections per server
+                    "-s",
+                    "16",  # split into 16 pieces
+                    "-k",
+                    "1M",  # chunk size
+                    "--min-split-size",
+                    "1M",
+                    "--download-result=full",
                 ]
             },
-            "concurrent_fragment_downloads": 16
+            "concurrent_fragment_downloads": 16,
         }
         with yt_dlp.YoutubeDL(yt_opts) as ydl:
             ydl.download([url])
@@ -71,7 +74,7 @@ class Downloader:
                 .replace('"', "＂")
                 .replace("|", "｜")
             )
-        return (Path() / f"{formatted_name} [{info["id"]}].{info["ext"]}").resolve()
+        return (Path() / f"{formatted_name} [{info['id']}].{info['ext']}").resolve()
 
     def download_video_with_audio(self, video_format_id: str, audio_format_id: str) -> Path:
         video_path = self.download(self.video_url, video_format_id)
@@ -88,9 +91,12 @@ class Downloader:
         output_video_path = (temp_folder / video_path.name).resolve()
         command = (
             "ffmpeg",
-            "-i", str(video_path),
-            "-i", str(audio_path),
-            "-c:v", "copy",
+            "-i",
+            str(video_path),
+            "-i",
+            str(audio_path),
+            "-c:v",
+            "copy",
             str(output_video_path),
         )
         print(f"Running command: {command}\n")
@@ -123,7 +129,7 @@ class Downloader:
         download_type = (input("Select download type (video/audio/[both]): ") or "b")[0].lower()
         if download_type not in ("a", "v", "b"):
             print("Invalid download type!", end="")
-            self.wait_key("Press 'Enter' to exit.", b"\r")
+            self.wait_key("Press 'Enter' to exit.")
             return
 
         output_folder = input(f"Enter the output folder (Defaults to {self.output_folder}): ")
